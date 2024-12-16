@@ -39,5 +39,10 @@ namespace URIS2024___Subject.Data
         {
             return Subjects;
         }
+
+        public void CreateSubject(SubjectEntity subject)
+        {
+            Subjects.Add(subject);
+        }
     }
 }
