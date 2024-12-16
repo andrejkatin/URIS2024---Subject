@@ -1,0 +1,52 @@
+name: CI - Run Tests and Check Coverage
+
+on:
+  pull_request:
+    branches:
+      - master  # Aktivira se samo za PR-ove koji targetuju develop granu
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Korak 1: Checkout koda
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Korak 2: Instalacija .NET SDK
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0
+
+      # Korak 3: Restore dependencies
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # Korak 4: Build projekta
+      - name: Build project
+        run: dotnet build --no-restore --configuration Release
+
+      # Korak 5: Pokretanje testova i generisanje Test Coverage
+      - name: Run tests with coverage
+        run: dotnet test --no-build --configuration Release --collect:"XPlat Code Coverage"
+
+      # Korak 6: Provera test coverage
+      - name: Check coverage
+        run: |
+          COVERAGE=$(reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:TextSummary | grep "Total Coverage:" | awk '{print $3}' | tr -d '%')
+          echo "Coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 90" | bc -l) )); then
+            echo "Coverage is below 90%. Failing the workflow."
+            exit 1
+          fi
+        env:
+          CI: true
+
+      # Korak 7: Publikovanje Coverage Report-a (opciono)
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage-report/
