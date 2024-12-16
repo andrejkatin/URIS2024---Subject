@@ -3,7 +3,7 @@ name: CI - Run Tests and Check Coverage
 on:
   pull_request:
     branches:
-      - master  # Aktivira se samo za PR-ove koji targetuju develop granu
+      - develop  # Aktivira se za PR-ove ka grani develop
 
 jobs:
   build-and-test:
@@ -18,7 +18,7 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0
+          dotnet-version: 7.0
 
       # Korak 3: Restore dependencies
       - name: Restore dependencies
@@ -28,23 +28,33 @@ jobs:
       - name: Build project
         run: dotnet build --no-restore --configuration Release
 
-      # Korak 5: Pokretanje testova i generisanje Test Coverage
+      # Korak 5: Pokretanje testova sa pokrivenošću koda
       - name: Run tests with coverage
         run: dotnet test --no-build --configuration Release --collect:"XPlat Code Coverage"
 
-      # Korak 6: Provera test coverage
-      - name: Check coverage
+      # Korak 6: Instalacija ReportGenerator alata
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+      # Korak 7: Dodavanje dotnet alata u PATH
+      - name: Add dotnet tools to PATH
+        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      # Korak 8: Generisanje izveštaja i analiza pokrivenosti
+      - name: Generate and analyze coverage report
         run: |
-          COVERAGE=$(reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:TextSummary | grep "Total Coverage:" | awk '{print $3}' | tr -d '%')
+          reportgenerator \
+            -reports:"**/coverage.cobertura.xml" \
+            -targetdir:"coverage-report" \
+            -reporttypes:TextSummary
+          COVERAGE=$(grep "Line coverage" coverage-report/Summary.txt | awk '{print $3}' | tr -d '%')
           echo "Coverage: $COVERAGE%"
           if (( $(echo "$COVERAGE < 90" | bc -l) )); then
             echo "Coverage is below 90%. Failing the workflow."
             exit 1
           fi
-        env:
-          CI: true
 
-      # Korak 7: Publikovanje Coverage Report-a (opciono)
+      # Korak 9: Publikovanje izveštaja o pokrivenosti (opciono)
       - name: Upload coverage report
         uses: actions/upload-artifact@v3
         with:
