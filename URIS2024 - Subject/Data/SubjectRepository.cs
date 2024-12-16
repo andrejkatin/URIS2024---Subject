@@ -34,5 +34,10 @@ namespace URIS2024___Subject.Data
         {
             return Subjects.FirstOrDefault(s => s.Id == id);
         }
+
+        public List<SubjectEntity> GetSubjects()
+        {
+            return Subjects;
+        }
     }
 }
