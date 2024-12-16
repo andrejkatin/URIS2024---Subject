@@ -3,7 +3,7 @@ name: CI - Run Tests and Check Coverage
 on:
   pull_request:
     branches:
-      - develop  # Aktivira se za PR-ove ka grani develop
+      - master  # Aktivira se za PR-ove ka grani develop
 
 jobs:
   build-and-test:
